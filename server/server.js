@@ -8,7 +8,7 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://real-time-collaborative-drawing-can-chi.vercel.app/",
+    origin: "https://real-time-collaborative-drawing-can-chi.vercel.app",
     methods: ["GET", "POST"]
   }
 });
