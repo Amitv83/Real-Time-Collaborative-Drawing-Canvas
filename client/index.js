@@ -1,4 +1,4 @@
-const socket = io('http://localhost:3000');
+const socket = io('https://real-time-collaborative-drawing-canvas-6usi.onrender.com/');
 
 const canvas = document.querySelector("canvas"),
       toolBtns = document.querySelectorAll(".tool"),
@@ -16,15 +16,13 @@ let isDrawing = false,
     selectedTool = "brush",
     brushWidth = 5,
     selectedColor = '#000',
-    strokes = [],        // all strokes drawn (global)
-    myStrokes = [],      // only your strokes (ordered)
-    redoStrokes = [],    // redo stack (your undone strokes)
+    strokes = [], 
+    myStrokes = [],  
+    redoStrokes = [],  
     currentStroke = null;
 
-// helper: generate unique stroke id
 const makeStrokeId = () => `${socket.id}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
 
-// Setup canvas
 window.addEventListener("load", () => {
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
@@ -32,29 +30,25 @@ window.addEventListener("load", () => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
 
-// Start drawing
 const startDraw = (e) => {
     isDrawing = true;
     currentStroke = {
-        id: socket.id,               // owner socket id
-        strokeId: makeStrokeId(),    // unique stroke id
+        id: socket.id,               
+        strokeId: makeStrokeId(),    
         type: 'stroke',
         color: selectedTool === "eraser" ? "#fff" : selectedColor,
         width: brushWidth,
         points: [{ x: e.offsetX, y: e.offsetY }]
     };
 
-    // no emit on start — we emit points as they come and final stroke on stop
 };
 
-// Drawing - local and broadcast points
 const drawing = (e) => {
     if (!isDrawing || !currentStroke) return;
     const point = { x: e.offsetX, y: e.offsetY };
     const points = currentStroke.points;
     points.push(point);
 
-    // Draw locally
     ctx.strokeStyle = currentStroke.color;
     ctx.lineWidth = currentStroke.width;
     ctx.lineCap = "round";
@@ -64,7 +58,6 @@ const drawing = (e) => {
     ctx.lineTo(point.x, point.y);
     ctx.stroke();
 
-    // Broadcast this segment (include strokeId so receivers can keep consistency)
     socket.emit('draw-point', {
         id: socket.id,
         strokeId: currentStroke.strokeId,
@@ -77,23 +70,19 @@ const drawing = (e) => {
     });
 };
 
-// Stop draw: finalize stroke and broadcast it
 const stopDraw = () => {
     if (!isDrawing || !currentStroke) return;
     isDrawing = false;
 
-    // push to local structures
     strokes.push(currentStroke);
     myStrokes.push(currentStroke);
-    redoStrokes = []; // clear redo on new action
+    redoStrokes = []; 
 
-    // broadcast final stroke object (so others can add it to their stroke lists)
     socket.emit('stroke-end', currentStroke);
 
     currentStroke = null;
 };
 
-// Redraw all strokes (used after undo/redo/clear)
 const redrawCanvas = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#fff";
@@ -115,18 +104,15 @@ const redrawCanvas = () => {
     }
 };
 
-// --- Undo/Redo (emit events so change is global) ---
 
 const undo = () => {
     if (!myStrokes.length) return;
     const lastStroke = myStrokes.pop();
     redoStrokes.push(lastStroke);
 
-    // remove from global strokes by strokeId
     strokes = strokes.filter(s => s.strokeId !== lastStroke.strokeId);
     redrawCanvas();
 
-    // inform server & everyone which strokeId to remove
     socket.emit('undo', { userId: socket.id, strokeId: lastStroke.strokeId });
 };
 
@@ -135,15 +121,12 @@ const redo = () => {
     const nextStroke = redoStrokes.pop();
     myStrokes.push(nextStroke);
 
-    // add to global strokes
     strokes.push(nextStroke);
     redrawCanvas();
 
-    // inform server & everyone to re-add this stroke
     socket.emit('redo', { userId: socket.id, stroke: nextStroke });
 };
 
-// Clear only on this tab (but you can change to emit if you want global clear)
 const clearLocal = () => {
     if (strokes.length === 0) return;
     myStrokes.push({ id: socket.id, type: 'clear', snapshot: strokes.slice(), actionId: makeStrokeId() });
