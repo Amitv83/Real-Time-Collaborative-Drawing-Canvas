@@ -1,4 +1,4 @@
-const socket = io('https://real-time-collaborative-drawing-canvas-200j.onrender.com/');
+const socket = io('https://real-time-collaborative-drawing-canvas-200j.onrender.com');
 
 const canvas = document.querySelector("canvas"),
       toolBtns = document.querySelectorAll(".tool"),
@@ -30,24 +30,46 @@ window.addEventListener("load", () => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
 
+window.addEventListener("resize", () => {
+    const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    ctx.putImageData(snapshot, 0, 0);
+});
+
+const getEventPosition = (e) => {
+  if (e.touches && e.touches.length > 0) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: e.touches[0].clientX - rect.left,
+      y: e.touches[0].clientY - rect.top
+    };
+  } else {
+    return { x: e.offsetX, y: e.offsetY };
+  }
+};
+
 const startDraw = (e) => {
+    e.preventDefault();
+    const { x, y } = getEventPosition(e);
     isDrawing = true;
     currentStroke = {
-        id: socket.id,               
-        strokeId: makeStrokeId(),    
+        id: socket.id,
+        strokeId: makeStrokeId(),
         type: 'stroke',
         color: selectedTool === "eraser" ? "#fff" : selectedColor,
         width: brushWidth,
-        points: [{ x: e.offsetX, y: e.offsetY }]
+        points: [{ x, y }]
     };
-
 };
 
 const drawing = (e) => {
     if (!isDrawing || !currentStroke) return;
-    const point = { x: e.offsetX, y: e.offsetY };
+    e.preventDefault();
+
+    const { x, y } = getEventPosition(e);
     const points = currentStroke.points;
-    points.push(point);
+    points.push({ x, y });
 
     ctx.strokeStyle = currentStroke.color;
     ctx.lineWidth = currentStroke.width;
@@ -55,7 +77,7 @@ const drawing = (e) => {
     ctx.lineJoin = "round";
     ctx.beginPath();
     ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
-    ctx.lineTo(point.x, point.y);
+    ctx.lineTo(x, y);
     ctx.stroke();
 
     socket.emit('draw-point', {
@@ -63,15 +85,16 @@ const drawing = (e) => {
         strokeId: currentStroke.strokeId,
         x1: points[points.length - 2].x,
         y1: points[points.length - 2].y,
-        x2: point.x,
-        y2: point.y,
+        x2: x,
+        y2: y,
         color: currentStroke.color,
         width: currentStroke.width
     });
 };
 
-const stopDraw = () => {
+const stopDraw = (e) => {
     if (!isDrawing || !currentStroke) return;
+    e.preventDefault();
     isDrawing = false;
 
     strokes.push(currentStroke);
@@ -79,7 +102,6 @@ const stopDraw = () => {
     redoStrokes = []; 
 
     socket.emit('stroke-end', currentStroke);
-
     currentStroke = null;
 };
 
@@ -103,7 +125,6 @@ const redrawCanvas = () => {
         }
     }
 };
-
 
 const undo = () => {
     if (!myStrokes.length) return;
@@ -139,6 +160,10 @@ canvas.addEventListener("mousedown", startDraw);
 canvas.addEventListener("mousemove", drawing);
 canvas.addEventListener("mouseup", stopDraw);
 canvas.addEventListener("mouseout", stopDraw);
+
+canvas.addEventListener("touchstart", startDraw, { passive: false });
+canvas.addEventListener("touchmove", drawing, { passive: false });
+canvas.addEventListener("touchend", stopDraw, { passive: false });
 
 undoBtn.addEventListener("click", undo);
 redoBtn.addEventListener("click", redo);
@@ -179,7 +204,6 @@ saveImg.addEventListener("click", () => {
     link.click();
 });
 
-
 socket.on('draw-point', data => {
     ctx.save();
     ctx.strokeStyle = data.color;
@@ -208,7 +232,7 @@ socket.on('redo', ({ userId, stroke }) => {
     }
 });
 
-socket.on('clear', data => {
+socket.on('clear', () => {
     strokes = [];
     redrawCanvas();
 });
