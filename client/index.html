@@ -10,24 +10,24 @@
     <div class="container">
         <!-- TOOL DISPLAY -->
         <section class="tool-display">
+            <div class ="opt">
             <div class="row">
                 
                 <ul class="options">
                     <li class="option active tool" id="brush">
-                        <span class="tool-choice">Brush🎨</span>
+                        <span class="tool-choice">Brush🖌️</span>
                     </li>
 
                     <li class="option tool" id="eraser">
-                        <span class="tool-choice">Eraser🩹</span>
+                        <span class="tool-choice">Eraser◻</span>
                     </li>
                 </ul>
-        </div>
-  
+            </div>
             
-            <label class="option">
+            <label class="option" id="slider">
                 <input type="range" id="size-slider" min="1" max="30" value="5">
             </label>
-            
+            </div>
             <div class="colors ">
                 <ul class="options" id="paint-options">                    
                     <li class="option selected"></li>
@@ -60,7 +60,7 @@
         <!-- DRAWING AREA -->
         <section class="drawing-area">
             <div id="online-count" class="online-count">Online: 0</div>
-            <canvas>
+            <canvas id="canvas">
             </canvas>
         </section>
     </div>

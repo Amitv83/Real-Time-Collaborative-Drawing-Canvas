@@ -43,8 +43,6 @@ section {
     border-radius: 7px;
 }
 
-
-
 .tool-display {
     width: 250px;
     padding: 15px 22px 0;
@@ -298,5 +296,29 @@ input[type="range"]::-webkit-slider-thumb:hover {
     border-radius: 7px;
     cursor: pointer;
     width: 5rem;
+}
+
+@media (max-width: 768px) {
+    .tool-display {
+        flex-direction: row;
+        display: grid;
+        width: 100%;
+        padding: 10px;
+    }
+    .options,.opt{
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    #slider{
+        padding-top: 10px;
+    }
+    .col{
+        display: flex;
+        justify-content: space-between;
+    }
+    #canvas{
+        height: 400px;
+    }
 }
 
