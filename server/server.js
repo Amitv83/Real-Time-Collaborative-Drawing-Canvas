@@ -13,7 +13,11 @@ const io = new Server(server, {
   }
 });
 
-app.use(cors());
+app.use(cors({
+  origin: "https://real-time-collaborative-drawing-can-chi.vercel.app",
+  methods: ["GET", "POST"]
+}));
+
 app.get("/", (req, res) => res.send("Socket.IO Server running"));
 
 let onlineUsers = 0;
