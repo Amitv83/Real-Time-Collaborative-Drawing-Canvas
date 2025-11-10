@@ -1,4 +1,4 @@
-const socket = io('https://real-time-collaborative-drawing-canvas-6usi.onrender.com/');
+const socket = io('https://real-time-collaborative-drawing-canvas-200j.onrender.com/');
 
 const canvas = document.querySelector("canvas"),
       toolBtns = document.querySelectorAll(".tool"),
